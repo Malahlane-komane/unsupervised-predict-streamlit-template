@@ -127,22 +127,22 @@ def main():
         graphs_choice = st.selectbox(
                 "Select a graph", graphs)
         if graphs_choice == "Most Popular movie Genres":
-                    st.image("resources\imgs\graph3.png")
+                    st.image("resources/imgs/graph3.png")
                     st.markdown(" Observation:Drama is the most commonly occurring genre with almost half the movies identifying itself as a drama film. The second one Comedy followed by Thriller, Romance, Action, Horror, Documentary, Crime, Adventure, Science Fiction, Children, Animation, Mystery and Fantasy. IMAX is the least common genre as it is the most expensive so fewer people watch it, it is also only available at the cinema and not streaming platforms such as Netflix.")
         elif graphs_choice == "Number of Ratings per Director":
-                    st.image("resources\imgs\graph4.png")
+                    st.image("resources/imgs/graph4.png")
                     st.markdown("Observation: Quentin Tarantino, in full Quentin Jerome Tarantino is an american director and screenwriter whose films are noted for their stylized violence, razor-sharp dialogue, and fascination with film and pop culture.and he believes that crime can make a movie pop.Tarantino's films often feature graphic violence, a tendency which has sometimes been criticized. ")
         elif graphs_choice == "Genre with highest released movies":
-                    st.image("resources\imgs\graph5.png")
+                    st.image("resources/imgs/graph5.png")
                     st.markdown("Observation: Dramas are most in demand when the  movie is released and have the most viewers, so the movie is released the most. This simply means that you can win in this genre and  usually not lose. ")
         elif graphs_choice == "Genre Popularity":
-                    st.image("resources\imgs\graph6.png")
+                    st.image("resources/imgs/graph6.png")
                     st.markdown("Observation: This shows that the drama  is the most trending of what we see across the dataset. It's definitely the trendiest and most highly rated genre because it's the most watched and the most talked about genre.")
         elif graphs_choice == "Pie Chart of genre distribution":
-                    st.image("resources\imgs\graph7.png")
+                    st.image("resources/imgs/graph7.png")
                     st.markdown("Observation: This graph shows the percentage of each genre in the dataset, as you can see that the drama is 25%. This allows us to conclude that drama is the most public genre of all. There is no genre that gets a drama rating above 25%.")
         elif graphs_choice == "Ratings Distribution":
-                    st.image("resources\imgs\plot.png")
+                    st.image("resources/imgs/plot.png")
                     st.markdown("Observation: rating number 4 is the highest and the lowest is rating number 1.")        
 
     # Building out the "about us" page
@@ -152,7 +152,7 @@ def main():
             st.header(" Meet our team")
             st.write("##")
             with right_column:
-                img = Image.open("resources\imgs\lahli.jpeg")
+                img = Image.open("resources/imgs/lahli.jpeg")
                 st.image(img)
             st.write(
 				"""
@@ -166,7 +166,7 @@ def main():
             st.write("##")
             st.write("##")
             with right_column:
-                img = Image.open("resources\imgs\pic2.jpeg")
+                img = Image.open("resources/imgs/pic2.jpeg")
                 st.image(img)
             st.write(
 				"""
@@ -184,7 +184,7 @@ def main():
             st.write("##")
             st.write("##")
             with right_column:
-                img = Image.open("resources\imgs\pic1.jpeg")
+                img = Image.open("resources/imgs/pic1.jpeg")
                 st.image(img)
             st.write(
 				"""    
