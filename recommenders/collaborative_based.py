@@ -30,21 +30,23 @@
 # Script dependencies
 import pandas as pd
 import numpy as np
-import scipy as sp
 import pickle
 import copy
+
 from surprise import Reader, Dataset
 from surprise import SVD, NormalPredictor, BaselineOnly, KNNBasic, NMF
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
 
 # Importing data
-movies_df = pd.read_csv('https://raw.githubusercontent.com/TEAMCBB1/streamlit/main/movies.csv',sep = ',')
-ratings_df = pd.read_csv('https://raw.githubusercontent.com/TEAMCBB1/streamlit/main/ratings.csv')
-ratings_df.drop(['timestamp'], axis=1,inplace=True)
+movies = pd.read_csv('./resources/data/movies.csv' ,sep = ',')
+ratings_data = pd.read_csv('./resources/data/ratings.csv')
+ratings_data.drop(['timestamp'], axis=1, inplace=True)
 
 # We make use of an SVD model trained on a subset of the MovieLens 10k dataset.
-model=pickle.load(open('resources/models/SVD.pkl', 'rb'))
+model=pickle.load(open('./resources/models/SVD.pkl', 'rb'))
+
+ratings = ratings_data.merge(movies[['movieId', 'title']], on='movieId')
 
 def prediction_item(item_id):
     """Map a given favourite movie to users within the
@@ -63,7 +65,7 @@ def prediction_item(item_id):
     """
     # Data preprosessing
     reader = Reader(rating_scale=(0, 5))
-    load_df = Dataset.load_from_df(ratings_df,reader)
+    load_df = Dataset.load_from_df(ratings_data,reader)
     a_train = load_df.build_full_trainset()
 
     predictions = []
@@ -91,7 +93,8 @@ def pred_movies(movie_list):
     # For each movie selected by a user of the app,
     # predict a corresponding user within the dataset with the highest rating
     for i in movie_list:
-        predictions = prediction_item(item_id = i)
+        movieid = movies[movies['title'] == i]['movieId'].values[0]
+        predictions = prediction_item(item_id = movieid)
         predictions.sort(key=lambda x: x.est, reverse=True)
         # Take the top 10 user id's from each movie with highest rankings
         for pred in predictions[:10]:
@@ -99,8 +102,16 @@ def pred_movies(movie_list):
     # Return a list of user id's
     return id_store
 
+
+def get_user_movies(data, user_list):
+    list_of_movies = pd.DataFrame()
+    for i in user_list:
+        temp = data[data['userId'] == i]
+        list_of_movies = list_of_movies.append(temp)
+    return list_of_movies
+
 # !! DO NOT CHANGE THIS FUNCTION SIGNATURE !!
-# You are, however, encouraged to change its content.  
+# You are, however, encouraged to change its content.
 def collab_model(movie_list,top_n=10):
     """Performs Collaborative filtering based upon a list of movies supplied
        by the app user.
@@ -118,62 +129,47 @@ def collab_model(movie_list,top_n=10):
         Titles of the top-n movie recommendations to the user.
 
     """
-    
-    names = movies_df.copy()
-    names.set_index('movieId',inplace=True)
-    indices = pd.Series(names['title'])
-    users_ids = pred_movies(movie_list)
-    # Get movie IDs and ratings for top users
-    df_init_users = ratings_df[ratings_df['userId']==users_ids[0]]
-    for i in users_ids[1:]:
-        df_init_users = df_init_users.append(ratings_df[ratings_df['userId']==i])
-    # Include predictions for chosen movies
-    for j in movie_list:
-        a = pd.DataFrame(prediction_item(j))
-        for i in set(df_init_users['userId']):
-            mid = indices[indices == j].index[0]
-            est = a['est'][a['uid']==i].values[0]
-            df_init_users = df_init_users.append(pd.Series([int(i),int(mid),est], index=['userId','movieId','rating']), ignore_index=True)
-    # Remove duplicate entries
-    df_init_users.drop_duplicates(inplace=True)
-    #Create pivot table
-    util_matrix = df_init_users.pivot_table(index=['userId'], columns=['movieId'], values='rating')
-    # Fill Nan values with 0's and save the utility matrix in scipy's sparse matrix format
-    util_matrix.fillna(0, inplace=True)
-    util_matrix_sparse = sp.sparse.csr_matrix(util_matrix.values)
-    # Compute the similarity matrix using the cosine similarity metric
-    user_similarity = cosine_similarity(util_matrix_sparse.T)
-    # Save the matrix as a dataframe to allow for easier indexing
-    user_sim_df = pd.DataFrame(user_similarity, index = util_matrix.columns, columns = util_matrix.columns)
-    user_similarity = cosine_similarity(np.array(df_init_users), np.array(df_init_users))
-    user_sim_df = pd.DataFrame(user_similarity, index = df_init_users['movieId'].values.astype(int), columns = df_init_users['movieId'].values.astype(int))
-    # Remove duplicate rows from matrix
-    user_sim_df = user_sim_df.loc[~user_sim_df.index.duplicated(keep='first')]
-    # Transpose matrix
-    user_sim_df = user_sim_df.T
-    # Find IDs of chosen load_movie_titles
-    idx_1 = indices[indices == movie_list[0]].index[0]
-    idx_2 = indices[indices == movie_list[1]].index[0]
-    idx_3 = indices[indices == movie_list[2]].index[0]
-    # Creating a Series with the similarity scores in descending order
-    rank_1 = user_sim_df[idx_1]
-    rank_2 = user_sim_df[idx_2]
-    rank_3 = user_sim_df[idx_3]
-    # Calculating the scores
-    score_series_1 = pd.Series(rank_1).sort_values(ascending = False)
-    score_series_2 = pd.Series(rank_2).sort_values(ascending = False)
-    score_series_3 = pd.Series(rank_3).sort_values(ascending = False)
-    # Appending the names of movies
-    listings = score_series_1.append(score_series_2).append(score_series_3).sort_values(ascending = False)
-    # Choose top 50
-    top_50_indexes = list(listings.iloc[1:50].index)
-    # Removing chosen movies
-    top_indexes = np.setdiff1d(top_50_indexes,[idx_1,idx_2,idx_3])
-    # Get titles of recommended movies
-    recommended_movies = []
-    for i in top_indexes[:top_n]:
-        recommended_movies.append(list(movies_df[movies_df['movieId']==i]['title']))
-    # Return list of movies
-    recommended_movies = [val for sublist in recommended_movies for val in sublist]
-    return recommended_movies
 
+
+    user_ids = pred_movies(movie_list)
+
+    list_of_movies = get_user_movies(ratings, user_ids)
+
+    movie_ids = []
+
+    for i in movie_list:
+        #Get movieId from tittle
+        movieID = movies[movies['title']==i]['movieId'].values[0]
+        movie_ids.append(movieID)
+
+    # Add new user with ratings to userlist
+    new_user_row1 = {'userId': 1000000, 'movieId': movie_ids[0], 'rating': 5.0, 'title': movie_list[0]}
+    new_user_row2 = {'userId': 1000000, 'movieId': movie_ids[1], 'rating': 5.0, 'title': movie_list[1]}
+    new_user_row3 = {'userId': 1000000, 'movieId': movie_ids[2], 'rating': 5.0, 'title': movie_list[2]}
+    list_of_movies = list_of_movies.append([new_user_row1, new_user_row2, new_user_row3], ignore_index=True)
+
+    # create pivot table
+    user_ratings = list_of_movies.pivot_table(index='userId', columns='title', values='rating').fillna(0)
+    # compute correlations from pivot table
+    item_similarity_df = user_ratings.corr(method='pearson')
+
+    def list_similar_movies(movie_name, user_rating = 5):
+        similar_score = item_similarity_df[movie_name] * user_rating
+        similar_score = similar_score.sort_values(ascending=False)
+        return similar_score
+
+    similar_movies = pd.DataFrame()
+
+    # get similar movies of fav movies
+    for movie in movie_list:
+        similar_movies = similar_movies.append(list_similar_movies(movie, 5), ignore_index=True)
+
+    recommended_movies = []
+    # sum similarities together append highest values
+    for i in similar_movies.sum().sort_values(ascending=False).index:
+        if i in movie_list:
+            pass
+        else:
+            recommended_movies.append(i)
+
+    return recommended_movies[:10] #First 10 movies
